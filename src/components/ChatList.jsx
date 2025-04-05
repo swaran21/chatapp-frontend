@@ -1,44 +1,39 @@
-import React, { useEffect, useState, useCallback } from "react"; // Added useCallback
-import apiClient from "../api/axiosConfig"; // Use apiClient
+import React, { useEffect, useState, useCallback } from "react";
+import apiClient from "../api/axiosConfig";
 
-const ChatList = ({ onSelectChat, refreshTrigger }) => { // Added refreshTrigger prop
+const ChatList = ({ onSelectChat, refreshTrigger }) => {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  // No need for isLoggedIn state if we rely on API calls succeeding/failing
 
-  const fetchChats = useCallback(async () => { // Wrap fetch logic in useCallback
+  const fetchChats = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      // Session check is implicitly done by the API call requiring auth
-      const response = await apiClient.get("/api/chat/list"); // Use apiClient, relative URL
-      // No need for separate /session call unless you want initial logged-in status before fetching
+      const response = await apiClient.get("/api/chat/list"); 
 
       if (response.data && Array.isArray(response.data)) {
         setChats(response.data);
         if (response.data.length === 0) {
-            setError("No chats available. Create one!"); // Informative message
+            setError("No chats available. Create one!");
         }
       } else {
         setChats([]);
         setError("Received unexpected data format for chats.");
       }
     } catch (error) {
-      // Interceptor handles 401/403 redirects, catch other errors
       if (error.response?.status !== 401 && error.response?.status !== 403) {
         setError("Error fetching chats. Please try refreshing.");
         console.error("Error fetching chats:", error);
       } else {
-        setError(""); // Clear error if it was an auth error handled by interceptor
+        setError("");
       }
-      setChats([]); // Clear chats on error
+      setChats([]);
     } finally {
       setLoading(false);
     }
-  }, []); // No dependencies needed if it only fetches
+  }, []);
 
-  // Fetch chats on mount and when refreshTrigger changes
   useEffect(() => {
     fetchChats();
   }, [fetchChats, refreshTrigger]);
@@ -58,8 +53,8 @@ const ChatList = ({ onSelectChat, refreshTrigger }) => { // Added refreshTrigger
               key={chat.chatId}
               className="p-3 bg-white rounded shadow-sm cursor-pointer hover:bg-blue-50 transition duration-150 ease-in-out"
               onClick={() => onSelectChat(chat)}
-              tabIndex={0} // Make it focusable
-              onKeyPress={(e) => e.key === 'Enter' && onSelectChat(chat)} // Allow selection with Enter key
+              tabIndex={0}
+              onKeyPress={(e) => e.key === 'Enter' && onSelectChat(chat)}
             >
               <p className="font-semibold text-blue-700">{chat.chatName}</p>
               <p className="text-sm text-gray-600">Chat with: {chat.receiverName}</p>

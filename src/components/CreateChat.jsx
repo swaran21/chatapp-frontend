@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import apiClient from "../api/axiosConfig"; // Use apiClient
+import apiClient from "../api/axiosConfig";
 
 const CreateChat = ({ onChatCreated }) => {
   const [chatName, setChatName] = useState("");
   const [receiverName, setReceiverName] = useState("");
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
-  const [loading, setLoading] = useState(false); // Loading state for creation
+  const [loading, setLoading] = useState(false);
 
   const handleCreateChat = async () => {
     if (!chatName.trim() || !receiverName.trim()) {
@@ -19,16 +19,15 @@ const CreateChat = ({ onChatCreated }) => {
     setLoading(true);
 
     try {
-      const response = await apiClient.post( // Use apiClient, relative URL
+      const response = await apiClient.post( 
         "/api/chat/create",
         { chatName, receiverName }
       );
-      setMessage(response.data.message || "Chat created!"); // Use backend message
+      setMessage(response.data.message || "Chat created!");
       setIsError(false);
       if (onChatCreated && response.data.chat) {
-        onChatCreated(response.data.chat); // Pass the created chat object up
+        onChatCreated(response.data.chat);
       }
-      // Clear fields on success
       setChatName("");
       setReceiverName("");
     } catch (error) {
@@ -41,7 +40,6 @@ const CreateChat = ({ onChatCreated }) => {
       console.error("Error creating chat", error);
     } finally {
         setLoading(false);
-         // Auto-clear message after a few seconds
         setTimeout(() => setMessage(""), 3000);
     }
   };
@@ -51,7 +49,7 @@ const CreateChat = ({ onChatCreated }) => {
        <h3 className="text-md font-semibold mb-2">Create New Chat</h3>
       <input
         type="text"
-        placeholder="Chat Name (e.g., Project X Discussion)"
+        placeholder="Chat Name"
         value={chatName}
         onChange={(e) => setChatName(e.target.value)}
         className="p-2 border mb-2 w-full rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
@@ -68,7 +66,7 @@ const CreateChat = ({ onChatCreated }) => {
       <button
         onClick={handleCreateChat}
         className="bg-blue-500 text-white p-2 w-full rounded hover:bg-blue-600 disabled:opacity-50"
-        disabled={loading} // Disable button while loading
+        disabled={loading}
        >
         {loading ? "Creating..." : "Create Chat"}
       </button>

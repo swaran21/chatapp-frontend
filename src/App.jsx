@@ -8,8 +8,6 @@ import CreateChat from "./pages/CreateChat.jsx";
 import ChatList from "./pages/ChatList.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import ChatBox from "./pages/ChatBox.jsx";
-import VoiceRecorder from "./components/VoiceRecorder.jsx";
-import axios from "axios";
 
 
 const App = () => {
@@ -24,7 +22,6 @@ const App = () => {
         <Route path="/createChat" element={<CreateChat />} />
         <Route path="/chatBox" element={<ChatBox />} />
         <Route path="/chatList" element={<ChatList />} />
-        <Route path="/voiceRecorder" element={<VoiceRecorder />}/>
       </Routes>
     </Router>
   );

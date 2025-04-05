@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react"; // Added useCallback
-import apiClient from "../api/axiosConfig"; // Use apiClient
+import React, { useState, useEffect, useCallback } from "react";
+import apiClient from "../api/axiosConfig";
 import ChatList from "./ChatList";
 import ChatBox from "./ChatBox";
 import Navbar from "../components/Navbar";
@@ -13,23 +13,21 @@ const ChatPage = () => {
   const [refreshChatList, setRefreshChatList] = useState(0); // State to trigger list refresh
   const navigate = useNavigate();
 
-  // Fetch current user session
   useEffect(() => {
     const fetchUsername = async () => {
        setLoading(true);
       try {
-        const response = await apiClient.get("/api/auth/session"); // Use apiClient
+        const response = await apiClient.get("/api/auth/session");
         if (response.data.loggedIn) {
           setCurrentUser(response.data.username);
         } else {
           console.log("User not logged in, redirecting from ChatPage.");
-          navigate("/login"); // Redirect if not logged in
+          navigate("/login");
         }
       } catch (error) {
-         // Interceptor handles 401 redirect
         if (error.response?.status !== 401) {
             console.error("Error fetching user session:", error);
-            navigate("/login"); // Fallback redirect
+            navigate("/login");
         }
       } finally {
           setLoading(false);
@@ -38,13 +36,11 @@ const ChatPage = () => {
     fetchUsername();
   }, [navigate]);
 
-  // Callback to refresh the chat list
   const handleChatCreated = useCallback((newChat) => {
       setSelectedChat(newChat); // Select the newly created chat
       setRefreshChatList(prev => prev + 1); // Increment to trigger refresh
   }, []);
 
-  // Callback after a chat is deleted
    const handleChatDeleted = useCallback((deletedChatId) => {
        setSelectedChat(null); // Deselect the chat
        setRefreshChatList(prev => prev + 1); // Trigger list refresh
@@ -59,15 +55,13 @@ const ChatPage = () => {
      )
   }
 
-  // Only render chat interface if currentUser is loaded
   return (
     <>
       <Navbar />
-      <div className="flex h-[calc(100vh-4rem)]"> {/* Adjust height based on Navbar height */}
-        {/* Left Pane: Create Chat + Chat List */}
+      <div className="flex h-[calc(100vh-4rem)]"> 
         <div className="w-full md:w-1/3 flex flex-col border-r border-gray-300">
           <CreateChat onChatCreated={handleChatCreated} />
-          <div className="flex-1 overflow-y-auto"> {/* Make list scrollable */}
+          <div className="flex-1 overflow-y-auto">
              <ChatList
                  onSelectChat={setSelectedChat}
                  refreshTrigger={refreshChatList} // Pass trigger
@@ -80,7 +74,7 @@ const ChatPage = () => {
              <ChatBox
                 chat={selectedChat}
                 currentUser={currentUser}
-                onChatDeleted={handleChatDeleted} // Pass delete handler
+                onChatDeleted={handleChatDeleted}
             />
           ) : (
             <p className="text-gray-500 text-lg p-10 text-center">

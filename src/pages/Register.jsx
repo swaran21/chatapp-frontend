@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import apiClient from "../api/axiosConfig"; // Use apiClient
+import apiClient from "../api/axiosConfig"
 
 const Register = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [isError, setIsError] = useState(false); // Differentiate success/error message styling
+  const [isError, setIsError] = useState(false);
 
   const handleRegister = async () => {
-    setMessage(""); // Clear previous message
+    setMessage("");
     setIsError(false);
      if (!username || !password) {
         setMessage("Please enter username and password.");
@@ -18,17 +18,16 @@ const Register = () => {
         return;
     }
     try {
-      const response = await apiClient.post( // Use apiClient, relative URL
+      const response = await apiClient.post( 
           "/api/auth/register",
           { username, password }
       );
-      setMessage(response.data.message || "Registration successful!"); // Use backend message
+      setMessage(response.data.message || "Registration successful!");
       setIsError(false);
-      setTimeout(() => navigate("/login"), 1500); // Redirect to login after delay
+      setTimeout(() => navigate("/login"), 1500);
     } catch (error) {
       setIsError(true);
       if (error.response) {
-         // Use specific error message from backend if available (e.g., 409 Conflict)
         setMessage(error.response.data?.message || `Registration failed (Status: ${error.response.status})`);
       } else {
         setMessage("Registration failed. Please check network or try again.");
@@ -62,7 +61,6 @@ const Register = () => {
       <button onClick={handleRegister} className="bg-green-500 text-white p-2 rounded w-64 hover:bg-green-600">
         Register
       </button>
-       {/* Link to Login */}
        <p className="mt-4">
             Already have an account?{' '}
             <button onClick={() => navigate('/login')} className="text-blue-600 hover:underline">
