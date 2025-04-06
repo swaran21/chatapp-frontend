@@ -11,7 +11,6 @@ import {
 } from '@heroicons/react/24/solid';
 import { DocumentIcon as FileIcon } from '@heroicons/react/24/outline';
 import EmojiPicker, { Theme as EmojiTheme, EmojiStyle } from 'emoji-picker-react';
-import { useTheme } from "../context/ThemeContext";
 
 const LoadingSpinner = ({ size = 'h-5 w-5', color = 'border-indigo-500 dark:border-indigo-400' }) => (
     <div className={`animate-spin rounded-full border-t-2 border-b-2 ${size} ${color}`}></div>
