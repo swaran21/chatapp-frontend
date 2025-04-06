@@ -1,77 +1,87 @@
-import React, { useEffect, useState } from "react"; // Added useState
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../api/axiosConfig";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Navbar"; // Ensure Navbar is themed
+
+const LoadingSpinner = () => (
+    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500 dark:border-indigo-400"></div>
+);
 
 const Welcome = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
-  const [loading, setLoading] = useState(true); // Loading state
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkSession = async () => {
-      setLoading(true);
-      try {
-        const response = await apiClient.get("/api/auth/session"); // Use apiClient, relative URL
-        if (response.data.loggedIn) {
-            setUsername(response.data.username); // Store username
-        } else {
-           console.log("Not logged in, redirecting to login.");
-           navigate("/login"); // Redirect if not logged in
-        }
-      } catch (error) {
-         // Interceptor likely handles 401 redirection
-        console.error("Session check failed in Welcome:", error);
-        if (error.response?.status !== 401) {
-            // Handle other errors if needed, maybe show an error message
-            navigate("/login"); // Fallback redirect
-        }
-      } finally {
-        setLoading(false);
-      }
+      setLoading(true); // Start loading
+       try {
+          const response = await apiClient.get("/api/auth/session");
+          if (response.data.loggedIn) { setUsername(response.data.username); }
+          else { console.log("Not logged in"); navigate("/login", { replace: true }); }
+       } catch (error) {
+          console.error("Session check failed:", error);
+          if (error.response?.status !== 401) { navigate("/login", { replace: true }); }
+          // 401 might be handled by interceptor or page redirects naturally
+       } finally { setLoading(false); } // Stop loading
     };
     checkSession();
-  }, [navigate]); // Add navigate dependency
+   }, [navigate]);
 
+  // Loading State UI
   if (loading) {
     return (
       <>
         <Navbar />
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)] bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
-            {/* Add a nice spinner maybe */}
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 dark:border-indigo-400"></div>
-            <span className="ml-3 text-lg">Loading session...</span>
+         {/* Centered loading spinner for the whole page area */}
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)]
+            bg-slate-100 dark:bg-gray-900
+            text-slate-500 dark:text-slate-400 transition-colors duration-300">
+            <LoadingSpinner />
+             <p className="mt-3 text-lg">Loading your session...</p>
         </div>
       </>
-    )
+    );
   }
 
+  // Welcome Page Content
   return (
-    <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark">
+    <div className="flex flex-col h-screen bg-slate-100 dark:bg-gray-900 transition-colors duration-300">
         <Navbar />
-      <div className="flex-grow flex items-center justify-center text-foreground-light dark:text-foreground-dark relative overflow-hidden p-4">
-           {/* Animated Gradient Background */}
-            <div className="absolute inset-0 z-0 bg-gradient-to-br from-green-200 via-blue-300 to-purple-300 dark:from-green-900/70 dark:via-blue-900/80 dark:to-purple-900/70 animate-gradientShift bg-size-200 opacity-50 dark:opacity-30 blur-3xl"></div>
+      {/* Main Content Area with potential subtle gradient */}
+      <div className="flex-grow flex items-center justify-center text-center relative overflow-hidden p-4
+          bg-gradient-to-br from-slate-50 to-white // Very subtle light gradient
+          dark:from-gray-900 dark:to-black       // Dark deep gradient
+        ">
 
-            {/* Content */}
-            <div className="relative z-10 flex flex-col items-center justify-center text-center">
-              <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 mb-4">
-                  Welcome back, {username}!
-              </h1>
-              <button
-                onClick={() => navigate("/chatPage")}
-                className="mt-10 px-10 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-xl font-semibold transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:focus:ring-offset-gray-900 shadow-md dark:from-emerald-400 dark:to-teal-500 dark:hover:from-emerald-500 dark:hover:to-teal-600"
-                >
-                    Start Chatting
-              </button>
+            {/* Optional subtle background shapes */}
+            <div className="absolute bottom-5 right-5 w-32 h-32 bg-gradient-to-tl from-blue-200 to-transparent rounded-full opacity-20 dark:opacity-10 dark:from-blue-900 filter blur-2xl animate-subtlePulse"></div>
+
+             {/* Centered Content */}
+            <div className="relative z-10 flex flex-col items-center">
+               {/* Welcome Title: Contrasting colors */}
+               <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3
+                    text-slate-800            dark:text-slate-100">
+                  Welcome back, <span className="text-indigo-600 dark:text-indigo-400">{username}</span>!
+               </h1>
+               {/* Subtitle */}
+               <p className="mt-2 text-lg max-w-lg
+                   text-slate-600            dark:text-slate-400">
+                   Ready to dive into your conversations?
+               </p>
+               {/* Action Button: Uses secondary accent */}
+               <button
+                  onClick={() => navigate("/chatPage")}
+                   className="mt-10 px-8 py-3 text-xl font-semibold rounded-xl shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transform transition-all duration-300 ease-in-out hover:scale-105 active:scale-100
+                       bg-gradient-to-r from-emerald-500 to-teal-600 text-white focus:ring-emerald-500 focus:ring-offset-white // Light Button
+                       dark:bg-gradient-to-r dark:from-teal-500 dark:to-cyan-600 dark:hover:from-teal-600 dark:hover:to-cyan-700 dark:focus:ring-teal-400 dark:focus:ring-offset-gray-900 dark:shadow-none // Dark Button
+                      ">
+                    Go to Chats
+               </button>
             </div>
-
-             {/* Subtle decorative elements */}
-             <div className="absolute bottom-10 right-10 w-24 h-24 bg-gradient-to-tl from-cyan-400 to-blue-500 dark:from-cyan-700 dark:to-blue-800 rounded-full opacity-20 dark:opacity-30 filter blur-2xl animate-pulse"></div>
       </div>
     </div>
   );
 };
-
 
 export default Welcome;

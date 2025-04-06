@@ -1,3 +1,4 @@
+// src/context/ThemeContext.jsx
 import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
 
 const ThemeContext = createContext({
@@ -10,11 +11,10 @@ export const useTheme = () => useContext(ThemeContext);
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     const storedTheme = localStorage.getItem('chatAppTheme');
-    if (storedTheme) {
-      return storedTheme;
-    }
-    // Default to system preference if no stored theme
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // Default to light if no preference or system pref is unknown/light
+    // You could default based on system pref like before too:
+    // return storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    return storedTheme || 'light'; // Defaulting to light
   });
 
   useEffect(() => {
@@ -25,28 +25,12 @@ export const ThemeProvider = ({ children }) => {
     root.classList.add(theme);
 
     localStorage.setItem('chatAppTheme', theme);
-    console.log(`Theme changed to: ${theme}`); // Debugging
   }, [theme]);
-
-  // Listen for system preference changes (optional but nice)
-  useEffect(() => {
-     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-     const handleChange = (e) => {
-        // Only change if no theme is manually set in localStorage? Or always follow?
-        // Let's respect localStorage override. If you want it to follow system:
-        // setTheme(e.matches ? 'dark' : 'light');
-     };
-
-     mediaQuery.addEventListener('change', handleChange);
-     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
 
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
   };
 
-  // Use useMemo to prevent unnecessary re-renders of consumers
    const value = useMemo(() => ({ theme, toggleTheme }), [theme]);
 
   return (

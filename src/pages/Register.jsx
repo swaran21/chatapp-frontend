@@ -8,109 +8,76 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = async () => {
-    setMessage("");
-    setIsError(false);
-    if (!username || !password) {
-      setMessage("Please enter username and password.");
-      setIsError(true);
-      return;
-    }
-    try {
-      const response = await apiClient.post("/api/auth/register", {
-        username,
-        password,
-      });
-      setMessage(response.data.message || "Registration successful!");
-      setIsError(false);
-      setTimeout(() => navigate("/login"), 1500);
-    } catch (error) {
-      setIsError(true);
-      if (error.response) {
-        setMessage(
-          error.response.data?.message ||
-            `Registration failed (Status: ${error.response.status})`
-        );
-      } else {
-        setMessage("Registration failed. Please check network or try again.");
-      }
-      console.error("Registration error:", error);
-    }
-  };
+  const handleRegister = async () => { /* ... Register handler logic ... */
+     setMessage(""); setIsError(false); if (!username.trim() || !password) { setMessage("Username and password are required."); setIsError(true); return; } if (password.length < 6) { setMessage("Password must be at least 6 characters long."); setIsError(true); return; } setLoading(true); try { const response = await apiClient.post("/api/auth/register", { username, password }); setMessage(response.data.message || "Registration successful! Redirecting..."); setIsError(false); setTimeout(() => navigate("/login"), 2000); } catch (error) { setIsError(true); setMessage(error.response?.data?.message || "Registration failed. Please try again."); console.error("Registration error:", error); } finally { setLoading(false); }
+   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-blue-100 dark:from-gray-800 dark:to-indigo-900 px-4 py-8">
-      {/* Enhanced Card */}
-      <div className="w-full max-w-sm p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
-        <h2 className="text-3xl font-bold text-center mb-6 text-gray-800 dark:text-gray-100">
-          Register
-        </h2>
+    // Simplified Background
+    <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8
+        bg-slate-100 transition-colors duration-300">
 
+      {/* Simplified Card */}
+      <div className="w-full max-w-sm p-8 rounded-xl border shadow-lg
+          bg-white border-slate-200">
+
+        {/* Title */}
+        <h2 className="text-3xl font-bold text-center mb-6 text-slate-800">Register</h2>
+
+        {/* Feedback Message Box */}
         {message && (
-          <p
-            className={`text-center mb-4 text-sm p-2 rounded-md border ${
-              isError
-                ? "text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700"
-                : "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700"
-            }`}
-          >
-            {message}
-          </p>
-        )}
+           <p className={`text-center mb-4 text-sm p-2.5 rounded-md border font-medium
+             ${isError
+               ? 'bg-red-50 text-red-700 border-red-200' // Error style
+               : 'bg-green-50 text-green-700 border-green-200' // Success style
+              }`}>
+             {message}
+           </p>
+         )}
 
-        <form className="space-y-6">
-          <div>
-            <label className="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2" htmlFor="username">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="shadow-sm appearance-none border border-gray-300 dark:border-gray-600 rounded-lg w-full py-3 px-4 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition duration-150"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-2" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="shadow-sm appearance-none border border-gray-300 dark:border-gray-600 rounded-lg w-full py-3 px-4 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition duration-150"
-              required
-            />
-          </div>
-          <div className="flex items-center justify-between pt-2">
-            <button
-              type="button"
-              onClick={handleRegister}
-              className="w-full text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 ease-in-out transform hover:scale-[1.02] bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 dark:from-green-500 dark:to-teal-600 dark:hover:from-green-600 dark:hover:to-teal-700 shadow-md hover:shadow-lg"
-            >
-              Register
-            </button>
-          </div>
+        {/* Form */}
+        <form onSubmit={(e) => { e.preventDefault(); handleRegister(); }} className="space-y-5">
+           {/* Username Field */}
+           <div>
+             <label className="block text-sm font-semibold mb-1.5 text-slate-700" htmlFor="username">Username</label>
+             <input id="username" type="text" placeholder="Choose a username" value={username} onChange={(e) => setUsername(e.target.value)} required disabled={loading}
+                 className="w-full py-2.5 px-4 rounded-lg border transition duration-150 focus:outline-none focus:ring-2 focus:border-transparent text-sm
+                    bg-slate-100 border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-indigo-500
+                    disabled:opacity-50 disabled:cursor-not-allowed" />
+           </div>
+           {/* Password Field */}
+           <div>
+             <label className="block text-sm font-semibold mb-1.5 text-slate-700" htmlFor="password">Password</label>
+             <input id="password" type="password" placeholder="Create a secure password (min 6 chars)" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={loading}
+                  className="w-full py-2.5 px-4 rounded-lg border transition duration-150 focus:outline-none focus:ring-2 focus:border-transparent text-sm
+                     bg-slate-100 border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-indigo-500
+                     disabled:opacity-50 disabled:cursor-not-allowed" />
+           </div>
+
+           {/* Submit Button */}
+           <div className="pt-2">
+              <button type="submit" disabled={loading}
+                 className={`w-full text-white font-semibold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition duration-200 ease-in-out transform active:scale-95
+                    ${loading ? 'bg-slate-400 cursor-not-allowed'
+                              : 'hover:scale-[1.02] shadow hover:shadow-md focus:ring-offset-white \
+                                 bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500'
+                    }`}>
+                {loading ? 'Registering...' : 'Create Account'}
+              </button>
+           </div>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-          Already have an account?{" "}
-          <button
-            onClick={() => navigate("/login")}
-            className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none underline transition duration-150"
-          >
-            Login here
-          </button>
+        {/* Link to Login */}
+        <p className="mt-6 text-center text-sm text-slate-600">
+           Already have an account?{' '}
+           <button onClick={() => navigate('/login')} className="font-medium underline transition duration-150 focus:outline-none text-indigo-600 hover:text-indigo-800">
+              Login here
+           </button>
         </p>
       </div>
     </div>
   );
 };
-
 export default Register;
