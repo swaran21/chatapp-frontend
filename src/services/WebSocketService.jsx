@@ -1,7 +1,9 @@
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
-const SOCKET_URL = "http://localhost:8080/ws-chat";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080"; // Fallback
+const SOCKET_ENDPOINT = "/ws-chat"; // WebSocket specific path
+const SOCKET_URL = `${API_BASE_URL}${SOCKET_ENDPOINT}`;
 
 class WebSocketService {
     constructor() {

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom'; // Import hook conditionally or handle navigation differently
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: `${import.meta.env.VITE_API_URL}`, // Corrected template literal syntax
   withCredentials: true,
 });
 
