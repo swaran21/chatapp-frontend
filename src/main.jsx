@@ -1,12 +1,14 @@
-  // Import the root of your app
-  import { StrictMode } from 'react';
-  import { createRoot } from 'react-dom/client';
-  import './index.css';
-  import App from './App.jsx';
-  
-  // Render the App component
-  createRoot(document.getElementById('root')).render(
-    <StrictMode>
+// src/main.jsx (or your app entry point)
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.jsx';
+import './index.css'; // Your Tailwind CSS import
+import { ThemeProvider } from './context/ThemeContext.jsx'; // Import
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <ThemeProvider> {/* <<< WRAP HERE */}
       <App />
-    </StrictMode>,
-  );
+    </ThemeProvider>
+  </React.StrictMode>,
+);

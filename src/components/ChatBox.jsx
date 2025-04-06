@@ -1,394 +1,530 @@
+// src/components/ChatBox.jsx
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import apiClient from "../api/axiosConfig";
 import WebSocketService from "../services/WebSocketService";
 
-const AttachIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>;
-const LoadingSpinner = () => <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-gray-600"></div>;
-const FileIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>;
-const SendArrowIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
+// Icons (Maybe centralize these later?)
+const AttachIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>;
+const LoadingSpinner = ({ size = 'h-5 w-5', color = 'border-gray-600 dark:border-gray-300' }) => <div className={`animate-spin rounded-full border-t-2 border-b-2 ${size} ${color}`}></div>;
+const FileIcon = ({ className = "h-5 w-5 flex-shrink-0 inline-block mr-1.5" }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" /></svg>;
+const SendArrowIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
+const TrashIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
+
 
 const ChatBox = ({ chat, currentUser, onChatDeleted }) => {
+    // State hooks (remain the same)
     const [messages, setMessages] = useState([]);
     const [inputMsg, setInputMsg] = useState("");
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [error, setError] = useState('');
-    const [uploadError, setUploadError] = useState(''); // Separate error for uploads
-    const [wsError, setWsError] = useState(''); // Separate error for WebSocket issues
-    const [isUploading, setIsUploading] = useState(false); // For file uploads
+    const [uploadError, setUploadError] = useState('');
+    const [wsError, setWsError] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
 
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const textareaRef = useRef(null);
 
-    const processMessages = useCallback((messagesToProcess) => {
-        if (!Array.isArray(messagesToProcess)) { return []; }
-        return messagesToProcess.map(msg => {
-            if (!msg || !msg.id || !msg.type) { return null; }
-            let processedMsg = { ...msg };
-            // FILE_URL: Ensure fileName exists
-            if (processedMsg.type === 'FILE_URL' && !processedMsg.fileName) {
-                try {
-                    const urlParts = processedMsg.content?.split('/');
-                    processedMsg.fileName = decodeURIComponent(urlParts?.[urlParts.length - 1] || 'Attached File');
-                } catch (e) { processedMsg.fileName = 'Attached File'; }
-            }
-            return processedMsg;
-        }).filter(Boolean);
-    }, []); 
+    // processMessages Logic (remains the same)
+     const processMessages = useCallback((messagesToProcess) => {
+         // ... same processing logic ...
+         if (!Array.isArray(messagesToProcess)) { return []; }
+            return messagesToProcess.map(msg => {
+                if (!msg || !msg.id || !msg.type) { console.warn("Skipping invalid message structure:", msg); return null; }
+                let processedMsg = { ...msg };
+                if (processedMsg.type === 'FILE_URL' && !processedMsg.fileName && processedMsg.content) {
+                    try { // Robust way to extract filename from URL
+                        const url = new URL(processedMsg.content);
+                        const pathParts = url.pathname.split('/');
+                        processedMsg.fileName = decodeURIComponent(pathParts[pathParts.length - 1] || 'Attached File');
+                    } catch (e) {
+                         console.error("Error parsing file URL for name:", e);
+                        // Fallback using simple split
+                        const urlParts = processedMsg.content?.split('/');
+                         processedMsg.fileName = decodeURIComponent(urlParts?.[urlParts.length - 1] || 'Attached File');
+                     }
+                } else if (processedMsg.type === 'FILE_URL' && !processedMsg.content) {
+                    console.warn("FILE_URL message missing content:", processedMsg);
+                    processedMsg.fileName = processedMsg.fileName || 'Missing File Link';
+                }
+                // Add timestamp parsing safety
+                if (processedMsg.timestamp && !(processedMsg.timestamp instanceof Date)) {
+                    try {
+                        processedMsg.timestamp = new Date(processedMsg.timestamp);
+                         // Check if the date is valid
+                        if (isNaN(processedMsg.timestamp.getTime())) {
+                             console.warn("Invalid timestamp received:", msg.timestamp);
+                             processedMsg.timestamp = null; // Or set to a default?
+                         }
+                    } catch (e) {
+                        console.error("Error parsing timestamp:", e);
+                         processedMsg.timestamp = null;
+                     }
+                }
+                return processedMsg;
+            }).filter(Boolean); // Remove nulls resulting from errors/skips
+     }, []);
 
+     // useEffect for fetching history and WebSocket (logic remains same, add logging)
     useEffect(() => {
-        // Guard clause: No chat selected or user not logged in
+         // ... same core logic with checks and cleanup ...
+         // Guard clause: No chat selected or user not logged in
         if (!chat?.chatId || !currentUser) {
             if (messages.length > 0) setMessages([]);
             setError(''); setUploadError(''); setWsError('');
             setLoadingHistory(false);
-            if (chat?.chatId) WebSocketService.unsubscribeFromChat(chat.chatId);
-            console.log("[Effect Main] No chat/user. Cleaned up.");
-            return;
+            setIsUploading(false); // Ensure uploading is reset
+             // Attempt unsubscribe if there was a chat ID, even if cleanup failed previously
+            if (chat?.chatId) { // Check previous state might be needed? No, just the passed chat prop.
+                 console.log(`[Effect Cleanup/Guard] Attempting unsubscribe for ${chat.chatId}`);
+                 WebSocketService.unsubscribeFromChat(chat.chatId);
+             }
+             // Reset input ref value in case it had content
+             if (textareaRef.current) textareaRef.current.value = "";
+             setInputMsg(""); // Clear state too
+             console.log("[Effect Guard] No chat/user. Cleaned up state.");
+             return;
         }
 
         // --- Start processing for the selected chat ---
         let isEffectActive = true; // Flag to prevent state updates after unmount/chat change
         let subscription = null;
 
-        console.log(`[Effect Main] Setting up for chat ${chat.chatId}`);
-        setLoadingHistory(true);
-        setError(''); setUploadError(''); setWsError('');
-        setMessages([]);
-        // 1. Fetch History
-        apiClient.get(`/api/chat/${chat.chatId}`)
+        console.log(`[ChatBox Effect ${chat.chatId}] Setting up...`);
+        setError(''); setUploadError(''); setWsError(''); // Clear errors for new chat
+         setMessages([]); // Clear messages immediately for new chat
+         setLoadingHistory(true); // Show loading
+
+         // 1. Fetch History
+         apiClient.get(`/api/chat/${chat.chatId}`)
             .then((res) => {
-                if (!isEffectActive) return;
-                console.log(`[Effect Main - History] Received history for chat ${chat.chatId}`);
-                const historicalMessages = processMessages(res.data || []);
-                setMessages(historicalMessages);
+                 if (!isEffectActive) { console.log(`[Effect ${chat.chatId} - History] Inactive on receive.`); return; }
+                 console.log(`[Effect ${chat.chatId} - History] Received:`, res.data?.length || 0, "messages");
+                 const historicalMessages = processMessages(res.data || []);
+                 setMessages(historicalMessages);
             })
             .catch((err) => {
-                if (!isEffectActive) return;
-                 if (err.response?.status !== 401 && err.response?.status !== 403) {
-                     console.error(`[Effect Main - History] Error fetching history for chat ${chat.chatId}:`, err);
-                     setError("Failed to load message history."); // Use general error state
-                 } else { console.warn(`[Effect Main - History] Auth error fetching history for chat ${chat.chatId}`); }
+                 if (!isEffectActive) { console.log(`[Effect ${chat.chatId} - History] Inactive on error.`); return; }
+                  if (err.response?.status !== 401 && err.response?.status !== 403) {
+                     console.error(`[Effect ${chat.chatId} - History] Fetch Error:`, err);
+                     setError("Failed to load message history.");
+                  } else { console.warn(`[Effect ${chat.chatId} - History] Auth error fetching history.`); }
             })
             .finally(() => { if (isEffectActive) setLoadingHistory(false); });
 
-        // 2. Setup WebSocket Subscription
+         // 2. Setup WebSocket Subscription
         const handleNewMessage = (msg) => {
-             // Check if effect is still active AND message is for the *currently viewed* chat
-            if (isEffectActive && msg && msg.chatId === chat.chatId) {
-                 console.log(`[WS] Processing incoming for chat ${chat.chatId}: Type=${msg.type}, ID=${msg.id}`);
-                 const [processedMsg] = processMessages([msg]); // Process the single new message
+             if (isEffectActive && msg && msg.chatId === chat.chatId) {
+                 console.log(`[WS ${chat.chatId}] Processing incoming: Type=${msg.type}, ID=${msg.id}`);
+                  const [processedMsg] = processMessages([msg]);
                  if (processedMsg) {
-                     // Use functional update to avoid stale closures and ensure no duplicates
                      setMessages(prevMessages =>
-                         prevMessages.some(m => m.id === processedMsg.id) ? prevMessages : [...prevMessages, processedMsg]
+                          // Check if message already exists by ID before adding
+                          prevMessages.some(m => m.id === processedMsg.id)
+                              ? prevMessages
+                              : [...prevMessages, processedMsg]
                      );
-                     setWsError(''); // Clear WS error on successful message
-                 } else { console.warn("[WS] Incoming message processing resulted in null:", msg); }
-             } else { /* Optional: Log ignored messages */ }
-        };
-
-        // Connect and subscribe
-        WebSocketService.connect()
-            .then(() => {
-                if (isEffectActive && chat?.chatId) { // Check again before subscribing
-                    subscription = WebSocketService.subscribeToChat(chat.chatId, handleNewMessage);
-                    if (subscription) {
-                        console.log(`[Effect Main - WS] Subscription successful for chat ${chat.chatId}`);
-                        setWsError(''); // Clear WS error on successful subscription
-                    } else {
-                        console.error(`[Effect Main - WS] Subscription failed for chat ${chat.chatId}`);
-                        if (isEffectActive) setWsError("Failed to subscribe to chat updates.");
-                    }
-                } else { console.log(`[Effect Main - WS] Connect OK, but effect inactive/chat changed.`); }
-            })
-            .catch((error) => {
-                console.error("[Effect Main - WS] Error during connect/subscribe:", error);
-                if (isEffectActive) setWsError("Real-time connection failed.");
-            });
-
-        // Cleanup function for this effect run
-        return () => {
-            console.log(`[Effect Main Cleanup] Cleaning up for chat ${chat?.chatId}`);
-            isEffectActive = false; // Mark effect as inactive
-            if (chat?.chatId) { // Only unsubscribe if chatId was valid for this effect run
-                 WebSocketService.unsubscribeFromChat(chat.chatId);
-                 console.log(`[Effect Main Cleanup] Unsubscribed from chat ${chat.chatId}`);
+                      // Clear WS-related error on successful message receipt
+                      setWsError(prev => prev ? "" : prev); // Clear only if there was an error
+                 } else { console.warn(`[WS ${chat.chatId}] Incoming message processing resulted in null:`, msg); }
+             } else {
+                 // Optional: Log ignored messages from other chats if needed
+                  // if (msg && msg.chatId !== chat.chatId) console.log(`[WS ${chat.chatId}] Ignoring message from different chat: ${msg.chatId}`);
             }
         };
-    // Dependencies: Rerun ONLY when chat ID or user changes. Callbacks are stable.
-    }, [chat?.chatId, currentUser, processMessages]);
+
+         // Connect and subscribe using the service (error handling inside)
+         // Ensure connection before subscribing
+         const setupSubscription = async () => {
+            try {
+                 if (!WebSocketService.isConnected()) {
+                      console.log(`[Effect ${chat.chatId} - WS] Not connected, attempting connection...`);
+                      await WebSocketService.connect(); // Wait for connection attempt
+                 }
+                  // Check again after await, connection might have failed or effect became inactive
+                  if (!isEffectActive || !chat?.chatId) {
+                     console.log(`[Effect ${chat.chatId} - WS] Effect inactive or chat changed after connection attempt.`);
+                      return;
+                 }
+                  if (!WebSocketService.isConnected()) {
+                      console.error(`[Effect ${chat.chatId} - WS] Connection failed.`);
+                       if (isEffectActive) setWsError("Real-time connection failed."); // Use WS error state
+                       return;
+                  }
+
+                 // Proceed with subscription
+                 subscription = WebSocketService.subscribeToChat(chat.chatId, handleNewMessage);
+                  if (subscription) {
+                     console.log(`[Effect ${chat.chatId} - WS] Subscription successful.`);
+                      setWsError(''); // Clear WS error on successful subscription
+                 } else {
+                     console.error(`[Effect ${chat.chatId} - WS] Subscription method failed.`);
+                      if (isEffectActive) setWsError("Failed to subscribe to chat updates.");
+                 }
+            } catch (error) {
+                console.error(`[Effect ${chat.chatId} - WS] Error during connect/subscribe:`, error);
+                 if (isEffectActive) setWsError("Real-time connection failed.");
+            }
+        };
+
+        setupSubscription(); // Call the async setup
+
+         // Cleanup function for this effect run
+        return () => {
+            console.log(`[ChatBox Cleanup ${chat?.chatId}] Running cleanup...`);
+            isEffectActive = false; // Mark effect as inactive immediately
+            if (chat?.chatId) { // Only unsubscribe if chatId was valid *for this effect run*
+                console.log(`[ChatBox Cleanup ${chat.chatId}] Unsubscribing from WebSocket.`);
+                 WebSocketService.unsubscribeFromChat(chat.chatId);
+            }
+        };
+        // Dependencies: Rerun ONLY when chat ID or current user changes. Callbacks are stable due to useCallback.
+     }, [chat?.chatId, currentUser, processMessages]);
 
 
-    // Effect 2: Scroll to Bottom - Runs when messages array changes
+    // Scroll to Bottom Effect (remains same)
     useEffect(() => {
-        if(messages.length > 0) { // Only scroll if there are messages
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        }
-    }, [messages]);
-
-     // Effect 3: Auto-resize textarea based on content
-     useEffect(() => {
-         if (textareaRef.current) {
-             textareaRef.current.style.height = 'auto'; // Reset height
-             textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Set to scroll height
+         if (messages.length > 0 && !loadingHistory) { // Scroll only when history isn't loading
+             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
          }
-     }, [inputMsg]); // Re-run when inputMsg changes
+    }, [messages, loadingHistory]); // Depend on loadingHistory too
 
-    // --- Event Handlers ---
+     // Auto-resize textarea effect (remains same)
+     useEffect(() => {
+         const txtArea = textareaRef.current;
+         if (txtArea) {
+             txtArea.style.height = 'auto'; // Reset height first
+              const scrollHeight = txtArea.scrollHeight;
+              // Consider max-height (defined in className)
+              txtArea.style.height = `${scrollHeight}px`;
+         }
+     }, [inputMsg]);
+
+    // Event Handlers (logic same, add logging)
     const sendTextMessage = () => {
         const text = inputMsg.trim();
-        if (text === "" || !chat?.chatId || !currentUser || isUploading) return;
+        if (!text || !chat?.chatId || !currentUser || isUploading || !WebSocketService.isConnected()) {
+            if (!WebSocketService.isConnected()) setWsError("Cannot send message: Not connected.");
+             console.warn("Send cancelled:", { text, chatId: chat?.chatId, currentUser, isUploading, isConnected: WebSocketService.isConnected() });
+            return;
+        }
+        console.log(`[ChatBox ${chat.chatId}] Sending TEXT:`, text);
         WebSocketService.sendTextMessage(chat.chatId, currentUser, text);
-        setInputMsg(""); // Clear input after sending
-        // Reset textarea height after sending
-        if (textareaRef.current) { textareaRef.current.style.height = 'auto'; }
+        setInputMsg(""); // Clear input state
+        if (textareaRef.current) textareaRef.current.value = ""; // Clear textarea directly if needed
+         // Reset height immediately after sending
+        if (textareaRef.current) textareaRef.current.style.height = 'auto';
+        setWsError(''); // Clear potential WS connection errors on successful send attempt
     };
 
     const handleKeyPress = (event) => {
-        // Send on Enter unless Shift is pressed (for newline)
-        if (event.key === 'Enter' && !event.shiftKey && !isUploading) {
-            event.preventDefault(); // Prevent default newline behavior
+         if (event.key === 'Enter' && !event.shiftKey && !isUploading) {
+            event.preventDefault();
             sendTextMessage();
-        }
+         }
     };
 
     const handleFileChange = (event) => {
-        setError(''); setUploadError(''); // Clear errors on new selection
-        const file = event.target.files?.[0];
-        if (file && !isUploading && chat?.chatId && currentUser) {
-            console.log("File selected:", file.name, file.type, file.size);
-            uploadFile(file); // Start upload process
-        } else if (isUploading) {
+        setError(''); setUploadError(''); // Clear errors
+         const file = event.target.files?.[0];
+        if (!file) {
+            console.log("File selection cancelled.");
+             return; // No file selected
+         }
+        if (isUploading) {
             setUploadError("Please wait for the current upload to finish.");
-        } else if (!chat?.chatId || !currentUser) {
-            setError("Cannot upload file: No active chat or user session.");
+             return;
         }
-        // Reset input value ALWAYS to allow selecting the same file again later
-        if (fileInputRef.current) {
+         if (!chat?.chatId || !currentUser) {
+             setError("Cannot upload file: Select a chat and ensure you are logged in.");
+             return;
+         }
+
+         console.log(`[ChatBox ${chat.chatId}] File selected:`, file.name, file.type, file.size);
+         uploadFile(file); // Start upload process
+
+         // IMPORTANT: Reset file input value to allow selecting the same file again
+         if (fileInputRef.current) {
             fileInputRef.current.value = "";
-        }
+         }
     };
 
-    // Upload Function (HTTP POST then WS Send Notification)
+    // Upload File Function (remains largely same, add logging, check WS connection before sending notification)
     const uploadFile = async (fileToUpload) => {
-        if (!fileToUpload || !chat?.chatId || !currentUser) {
-            console.error("uploadFile called with missing file, chatId, or currentUser");
-            return;
-        }
+        if (!fileToUpload || !chat?.chatId || !currentUser) return;
 
-        setError(''); setUploadError(''); // Clear previous errors
+        setError(''); setUploadError(''); // Clear errors
         setIsUploading(true);
-        console.log(`Starting upload via HTTP POST for: ${fileToUpload.name}`);
+         console.log(`[ChatBox ${chat.chatId}] Starting HTTP upload for: ${fileToUpload.name}`);
 
         const formData = new FormData();
         formData.append("file", fileToUpload);
 
         try {
-            // Make sure apiClient has withCredentials: true if using session auth
             const response = await apiClient.post("/api/files/upload", formData, {
+                // Add headers if required by backend (e.g., for CSRF)
             });
 
-            console.log("Backend HTTP upload response:", response?.data);
+            console.log(`[ChatBox ${chat.chatId}] HTTP Upload response:`, response?.data);
+             const { fileUrl, fileName, fileType } = response?.data || {};
 
-            // Validate response from backend controller
-            const { fileUrl, fileName, fileType, fileSize } = response?.data || {};
             if (!fileUrl || !fileName || !fileType) {
-                 // Use specific upload error state
-                 setUploadError("Upload succeeded, but server response was incomplete.");
-                 throw new Error("Backend response missing required file details.");
+                setUploadError("Upload incomplete: Server response missing details.");
+                throw new Error("Incomplete server response for file upload.");
             }
 
-            console.log(`HTTP Upload successful: ${fileName} (${fileType})`);
+             console.log(`[ChatBox ${chat.chatId}] HTTP Upload SUCCESS: ${fileName} (${fileType})`);
 
-            // NOW, send the WebSocket message with the details IF connected
-            if (WebSocketService.isConnected()) {
-                console.log(`Sending FILE_URL message via WS for ${fileName}`);
-                WebSocketService.sendFileUrlMessage( chat.chatId, currentUser, fileUrl, fileType, fileName );
-                setUploadError(''); // Clear upload error on success
-            } else {
-                console.error("WebSocket not connected after successful upload. Cannot send file notification message.");
-                setWsError("File uploaded, but chat update failed (connection issue)."); // Use WS error state
-            }
+            // NOW, send WebSocket message notification *if connected*
+             if (WebSocketService.isConnected()) {
+                console.log(`[ChatBox ${chat.chatId}] Sending FILE_URL message via WS for ${fileName}`);
+                 WebSocketService.sendFileUrlMessage(chat.chatId, currentUser, fileUrl, fileType, fileName);
+                 setUploadError(''); // Clear upload error on full success
+                 setWsError('');     // Clear WS error too
+             } else {
+                console.error(`[ChatBox ${chat.chatId}] WS disconnected after upload success. Cannot send notification.`);
+                 // Keep uploadError maybe? Or use wsError?
+                setWsError("File uploaded, but couldn't notify chat (connection issue). Please refresh maybe.");
+                 // We could try to re-establish connection and send? More complex.
+             }
 
         } catch (error) {
-            console.error("File upload process failed:", error);
-            let errorMessage = `Upload failed for ${fileToUpload.name}. `;
-            if (error.response) {
-                 errorMessage += `Server: ${error.response.data?.message || error.response.statusText || 'Error'} (${error.response.status})`;
+             console.error(`[ChatBox ${chat.chatId}] File upload process FAILED:`, error);
+             let errorMessage = `Upload failed for ${fileToUpload.name}. `;
+             if (error.response) {
+                errorMessage += `Server: ${error.response.data?.message || error.response.statusText || 'Error'} (${error.response.status})`;
             } else if (error.request) { errorMessage += "No response from server."; }
             else { errorMessage += `Error: ${error.message}`; }
-            setUploadError(errorMessage); // Set upload-specific error
+            setUploadError(errorMessage);
         } finally {
-            console.log("Upload process finished.");
+             console.log(`[ChatBox ${chat.chatId}] Upload process finished (success or fail).`);
             setIsUploading(false);
-            // Clear the file input ref value again just in case
-             if (fileInputRef.current) { fileInputRef.current.value = ""; }
+             // Clear file input again to be safe
+             if (fileInputRef.current) fileInputRef.current.value = "";
         }
     };
 
-
+     // Delete Chat Handler (remains same, improved confirmation and feedback)
     const handleDeleteChat = async () => {
-        if (!chat?.chatId || isUploading) return; // Prevent delete during upload
-        const confirmDelete = window.confirm(`Are you sure you want to delete the chat "${chat.chatName || 'this chat'}"? This action cannot be undone.`);
+        if (!chat?.chatId || isUploading) return;
+         const chatDisplayName = chat.chatName || `chat with ${chat.receiverName}`;
+        // Use a more user-friendly confirmation
+        const confirmDelete = window.confirm(`Are you sure you want to permanently delete "${chatDisplayName}"?\n\nAll messages in this chat will be lost for you. The other participant(s) will still see their copy.`);
         if (!confirmDelete) return;
 
-        setError(''); // Clear general errors
+        setError(''); // Clear other errors
         try {
+             console.log(`[ChatBox ${chat.chatId}] Attempting to delete chat.`);
             const response = await apiClient.delete(`/api/chat/delete?chatId=${chat.chatId}`);
-            console.log("Delete response:", response);
-            alert(response.data.message || "Chat deleted successfully!"); // Provide feedback
-            if (onChatDeleted) onChatDeleted(chat.chatId); // Notify parent component
-        } catch (error) {
-            console.error("Error deleting chat:", error);
-            let errorMsg = "Failed to delete chat.";
+             console.log(`[ChatBox ${chat.chatId}] Delete response:`, response.data);
+             // Provide success feedback (maybe use a less intrusive notification system later)
+             // alert(response.data.message || "Chat deleted successfully!");
+             if (onChatDeleted) onChatDeleted(chat.chatId); // Notify parent
+         } catch (error) {
+            console.error(`[ChatBox ${chat.chatId}] Error deleting chat:`, error);
+             let errorMsg = "Failed to delete chat.";
             if (error.response) { errorMsg = `Error: ${error.response.data?.message || error.response.statusText || 'Server error'} (${error.response.status})`; }
             else if (error.request) { errorMsg = "Error: No response from server."; }
             else { errorMsg = `Error: ${error.message}`; }
-            // Avoid showing alert for auth errors if handled globally by routing
-            if (error.response?.status !== 401 && error.response?.status !== 403) {
-                setError(errorMsg); // Show error in the chatbox general error area
-            }
-        }
+
+             // Show error in the chatbox, avoid alert for common auth issues
+             if (error.response?.status !== 401 && error.response?.status !== 403) {
+                setError(errorMsg);
+                 // Optional: Use alert as fallback for critical delete errors
+                 // alert(`Failed to delete chat: ${errorMsg}`);
+             } else {
+                 // Log auth error, potentially handled globally
+                 console.warn(`[ChatBox ${chat.chatId}] Auth error during delete.`);
+             }
+         }
     };
 
-    // --- JSX Rendering ---
+
+    // --- JSX Rendering with Theming ---
     return (
-        <div className="w-full h-full flex flex-col border-l border-gray-300 bg-gray-100">
-            {/* Header */}
-            <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-semibold flex justify-between items-center shadow-md flex-shrink-0">
-                {chat?.chatName ? (
-                    <span className="truncate" title={`Chat: ${chat.chatName} (with ${chat.receiverName})`}>
-                        {chat.chatName} <span className="text-sm font-normal opacity-80">(with {chat.receiverName})</span>
-                    </span>
+        <div className="flex flex-col h-full w-full bg-gray-100 dark:bg-gray-900 border-l border-border-light dark:border-border-dark shadow-inner">
+            {/* Header - Enhanced */}
+            <div className="flex-shrink-0 p-3 bg-gradient-to-r from-indigo-600 to-blue-700 dark:from-gray-800 dark:to-gray-900 text-white font-semibold flex justify-between items-center shadow-md border-b border-indigo-700 dark:border-gray-700">
+                {chat?.chatId ? (
+                     <div className="min-w-0 flex-1 mr-2"> {/* Ensure text truncation */}
+                        <span className="truncate block text-lg" title={`Chat: ${chat.chatName} (ID: ${chat.chatId})`}>
+                             {chat.chatName || "Unnamed Chat"}
+                         </span>
+                         <span className="text-xs font-normal opacity-80 block truncate">
+                            Chatting with: {chat.receiverName || 'Unknown'}
+                         </span>
+                     </div>
                 ) : (
-                    <span className="italic text-gray-200">No chat selected</span>
+                    <span className="italic text-gray-300 dark:text-gray-500">No Chat Selected</span>
                 )}
                 {chat?.chatId && (
-                    <button
+                     <button
                         onClick={handleDeleteChat}
-                        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50 text-sm transition duration-150 flex-shrink-0 ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Delete this chat"
-                        disabled={isUploading} // Disable delete while uploading
-                    >
-                        Delete
-                    </button>
+                         className="flex-shrink-0 bg-red-600/80 text-white px-3 py-1.5 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-70 text-xs transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                         title="Delete this chat permanently"
+                         disabled={isUploading}
+                     >
+                       <TrashIcon /> Delete
+                     </button>
                 )}
             </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 bg-gray-50">
-                {/* Loading/Error States */}
-                 {loadingHistory && <p className="text-center text-gray-500 p-4 animate-pulse">Loading history...</p>}
-                 {error && !loadingHistory && (<p className="text-center text-red-600 p-2 bg-red-100 rounded mb-2 text-sm border border-red-300">{error}</p>)}
-                 {wsError && (<p className="text-center text-orange-600 p-2 bg-orange-100 rounded mb-2 text-sm border border-orange-300">{wsError}</p>)}
-                 {!chat?.chatId && !loadingHistory && !error && !wsError && <p className="text-center text-gray-500 p-10">Select or create a chat to begin.</p>}
+            {/* Messages Area - Themed background and scrollbar styles (if possible) */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-200/50 dark:bg-gray-800/60 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                {/* General Loading/Error States */}
+                 {loadingHistory && (
+                     <div className="text-center text-muted-light dark:text-muted-dark p-4 animate-pulse">
+                         Loading message history...
+                    </div>
+                 )}
+                 {/* Display combined errors nicely */}
+                 {(!loadingHistory && (error || wsError)) && (
+                     <div className={`text-center p-2 mx-auto max-w-md rounded-md mb-2 text-sm border ${error ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300 border-red-300 dark:border-red-700' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 border-orange-300 dark:border-orange-700'}`}>
+                          {error || wsError /* Prioritize API error over WS error */}
+                     </div>
+                 )}
+                 {!chat?.chatId && !loadingHistory && !error && !wsError && (
+                     <div className="text-center text-muted-light dark:text-muted-dark p-10 italic">
+                         Select or create a chat to begin.
+                    </div>
+                )}
 
-                {/* Render Messages */}
-                {chat?.chatId && messages.map((msg) => (
-                    <div key={msg.id} className={`flex ${msg.sender === currentUser ? "justify-end" : "justify-start"}`}>
-                        <div className={`relative max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg p-2.5 rounded-lg shadow-md break-words ${msg.sender === currentUser ? "bg-blue-500 text-white" : "bg-white text-gray-900 border border-gray-200"}`}>
-                            {/* Sender Name (only if not current user) */}
-                            {msg.sender !== currentUser && (
-                                <strong className="text-xs font-semibold block mb-1 text-indigo-700">{msg.sender}</strong>
+
+                {/* Render Messages - Themed Bubbles */}
+                {chat?.chatId && !loadingHistory && messages.map((msg) => (
+                    <div key={msg.id} className={`flex ${msg.sender === currentUser ? "justify-end" : "justify-start"} group`}>
+                        <div
+                             className={`relative max-w-[80%] sm:max-w-[70%] md:max-w-[65%] p-3 rounded-xl shadow-md break-words text-sm leading-snug
+                                 ${msg.sender === currentUser
+                                     ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-none"
+                                     : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600 rounded-bl-none"
+                                 } transition-all duration-150 ease-out`} // Added transition
+                        >
+                             {/* Sender Name (only if not current user) */}
+                             {msg.sender !== currentUser && (
+                                <strong className="text-xs font-bold block mb-1 text-indigo-700 dark:text-indigo-400">
+                                     {msg.sender}
+                                 </strong>
                             )}
 
-                            {/* Content: TEXT */}
-                            {msg.type === 'TEXT' && (
-                                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                            )}
-
-                            {/* Content: FILE_URL */}
-                            {msg.type === 'FILE_URL' && msg.content && (
-                                <a
-                                    href={msg.content} // The Cloudinary URL
-                                    target="_blank" // Open in new tab
-                                    rel="noopener noreferrer" // Security best practice
-                                    download={msg.fileName || 'download'} // Suggest filename
-                                    title={`Download: ${msg.fileName || 'Attached File'}`}
-                                    className={`flex items-center space-x-1.5 text-sm font-medium underline transition-colors duration-150 ease-in-out ${msg.sender === currentUser ? 'text-blue-100 hover:text-white' : 'text-indigo-600 hover:text-indigo-800'}`}
-                                >
-                                    <FileIcon />
-                                    <span className="truncate max-w-[180px] sm:max-w-[220px]">
-                                        {msg.fileName || 'Attached File'}
-                                    </span>
-                                </a>
-                            )}
-                            {/* Error state for FILE_URL */}
-                             {msg.type === 'FILE_URL' && !msg.content && (
-                                <p className="text-xs text-red-500 italic">Error: File link is missing</p>
+                             {/* Content: TEXT */}
+                             {msg.type === 'TEXT' && (
+                                <p className="whitespace-pre-wrap">{msg.content}</p> // Allow line breaks
                              )}
 
-                            {/* Timestamp */}
-                             {msg.timestamp && (
-                                <span
-                                    className={`text-[10px] block mt-1.5 text-right ${msg.sender === currentUser ? 'opacity-70' : 'text-gray-500 opacity-80'}`}
-                                    title={new Date(msg.timestamp).toLocaleString()}
+                             {/* Content: FILE_URL - Enhanced styling */}
+                            {msg.type === 'FILE_URL' && msg.content && (
+                                 <a
+                                     href={msg.content}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    download={msg.fileName || 'download'}
+                                    title={`Download: ${msg.fileName || 'Attached File'}`}
+                                    className={`flex items-center space-x-1.5 font-medium rounded-md p-2 my-1 transition-colors duration-150 ease-in-out group
+                                          ${msg.sender === currentUser
+                                            ? 'bg-blue-600/70 hover:bg-blue-700/80 text-blue-100 hover:text-white'
+                                             : 'bg-gray-100 dark:bg-gray-600/50 hover:bg-gray-200 dark:hover:bg-gray-600 text-indigo-700 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-200'
+                                          }`}
                                 >
-                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                     <FileIcon className="h-6 w-6 flex-shrink-0" />
+                                    <span className="truncate flex-1 min-w-0">
+                                        {msg.fileName || 'Attached File'}
+                                    </span>
+                                     {/* Optional: Add download icon on hover */}
+                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                     </svg>
+                                </a>
+                            )}
+                             {/* Error state for FILE_URL */}
+                             {msg.type === 'FILE_URL' && !msg.content && (
+                                 <p className="text-xs text-red-400 dark:text-red-300 italic p-1 bg-red-900/50 rounded mt-1">
+                                     Error: File link is missing or invalid.
+                                 </p>
+                             )}
+
+                             {/* Timestamp - More subtle and maybe on hover? */}
+                             {msg.timestamp && msg.timestamp instanceof Date && !isNaN(msg.timestamp.getTime()) && (
+                                 <span
+                                      className={`text-[10px] select-none block mt-1.5 text-right transition-opacity duration-200
+                                           ${msg.sender === currentUser
+                                             ? 'text-blue-200 opacity-60 group-hover:opacity-100'
+                                              : 'text-gray-400 dark:text-gray-500 opacity-60 group-hover:opacity-100'
+                                           }`}
+                                      title={msg.timestamp.toLocaleString()} // Full timestamp on hover
+                                >
+                                      {/* Format Time Nicely */}
+                                       {msg.timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
                                 </span>
                              )}
                         </div>
                     </div>
                 ))}
-                {/* Element to scroll to */}
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} className="h-px" /> {/* Scroll target */}
             </div>
 
-            {/* Input Area */}
+            {/* Input Area - Enhanced Styling */}
             {chat?.chatId && currentUser && (
-                <div className="p-3 border-t bg-gray-200 flex-shrink-0 space-y-2">
+                 <div className="flex-shrink-0 p-3 border-t border-border-light dark:border-border-dark bg-gray-200/70 dark:bg-gray-800/80 backdrop-blur-sm space-y-2">
                     {/* Upload Error Display */}
-                    {uploadError && (<p className="text-xs text-red-600 p-1 bg-red-100 rounded border border-red-300">{uploadError}</p>)}
+                     {uploadError && (
+                         <p className="text-xs text-red-600 dark:text-red-400 p-2 bg-red-100 dark:bg-red-900/30 rounded border border-red-300 dark:border-red-700 flex items-center gap-1">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                             {uploadError}
+                        </p>
+                    )}
 
-                    {/* Row 1: Text Input & File Attach/Send */}
+                     {/* Main Input Row */}
                      <div className="flex items-end space-x-2">
                          {/* Attach Button */}
                          <button
-                            onClick={() => !isUploading && fileInputRef.current?.click()}
-                            className="p-2 text-gray-600 hover:text-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-center"
+                             onClick={() => !isUploading && fileInputRef.current?.click()}
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-center"
                             title="Attach File"
                             aria-label="Attach File"
-                            disabled={isUploading}
+                             disabled={isUploading}
                          >
-                             {isUploading ? <LoadingSpinner /> : <AttachIcon />}
-                         </button>
-                         {/* Hidden File Input */}
+                             {isUploading ? <LoadingSpinner color="border-indigo-500 dark:border-indigo-400" /> : <AttachIcon />}
+                        </button>
+                        {/* Hidden File Input */}
                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            className="hidden"
-                            aria-hidden="true"
-                            disabled={isUploading}
+                             type="file"
+                             ref={fileInputRef}
+                             onChange={handleFileChange}
+                             className="hidden"
+                             aria-hidden="true"
+                             disabled={isUploading}
+                            // Optional: Add accept attribute
+                             // accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
                          />
 
-                         {/* Text Input Area */}
+                         {/* Text Input Area - Improved Styling */}
                          <textarea
                             ref={textareaRef}
                             value={inputMsg}
-                            onChange={(e) => setInputMsg(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            className="p-2 flex-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-300 disabled:cursor-not-allowed resize-none text-sm leading-snug"
-                            placeholder={isUploading ? "Uploading file..." : "Type a message (Shift+Enter for newline)..."}
+                             onChange={(e) => setInputMsg(e.target.value)}
+                             onKeyPress={handleKeyPress}
+                            className="flex-1 p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed resize-none text-sm leading-snug scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-500"
+                            placeholder={isUploading ? "Uploading..." : "Type message (Shift+Enter for new line)"}
                             aria-label="Type a message"
-                            disabled={isUploading}
-                            rows={1}
-                            style={{ maxHeight: '100px', overflowY: 'auto' }} // Limit height, enable scroll
+                             disabled={isUploading}
+                             rows={1}
+                             style={{ maxHeight: '120px', overflowY: 'auto' }} // Limit height
                          />
 
-                        {/* Send Button */}
-                        <button
-                            onClick={sendTextMessage}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-2 rounded-lg transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed self-end flex items-center"
-                            disabled={inputMsg.trim() === "" || isUploading}
-                            aria-label="Send Message"
-                        >
-                           <SendArrowIcon />
-                        </button>
+                         {/* Send Button - Enhanced */}
+                         <button
+                             onClick={sendTextMessage}
+                            className={`bg-gradient-to-br from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 dark:from-indigo-500 dark:to-blue-500 dark:hover:from-indigo-600 dark:hover:to-blue-600 text-white font-semibold p-2.5 rounded-lg shadow hover:shadow-md transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed self-end flex items-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800 transform disabled:scale-100 hover:scale-105`}
+                             disabled={inputMsg.trim() === "" || isUploading || !WebSocketService.isConnected()} // Also disable if not connected
+                             aria-label="Send Message"
+                             title={!WebSocketService.isConnected() ? "Cannot send: Not connected" : "Send Message"}
+                         >
+                             <SendArrowIcon />
+                         </button>
                     </div>
-                </div>
-            )}
+                 </div>
+             )}
         </div>
     );
 };
