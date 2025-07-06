@@ -81,7 +81,7 @@ const ChatList = ({ onSelectChat, refreshTrigger, selectedChatId }) => {
         <ul className="space-y-1 py-1">
           {chats.map((chat) => {
             // Step 2: Check if the current chat is with the AI
-            const isAiChat = chat.receiverName === "AI CHAT BOT";
+            const isAiChat = chat.receiverName === "Gemini AI";
             return (
               <li
                 key={chat.chatId}
