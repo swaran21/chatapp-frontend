@@ -31,7 +31,7 @@ Authentication endpoints used by the client:
 
 Chat endpoints used by the client:
 
-- `GET /api/chats`
+- `GET /api/chat/list`
 - `POST /api/chat/create`
 - `GET /api/chat/{chatId}?limit=50`
 - `DELETE /api/chat/delete?chatId={chatId}`
