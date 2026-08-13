@@ -11,6 +11,7 @@ class WebSocketService {
         this.isConnectedState = false;
         this.chatSubscriptions = new Map();
         this.presenceSubscription = null;
+        this.presenceHandler = null;
     }
 
     isConnected() {
@@ -68,6 +69,7 @@ class WebSocketService {
     async subscribeToPresence(onPresence) {
         await this.connect();
         if (this.presenceSubscription) this.presenceSubscription.unsubscribe();
+        this.presenceHandler = onPresence;
         this.presenceSubscription = this.client.subscribe("/topic/presence", (frame) => {
             onPresence?.(this._parse(frame));
         });
@@ -93,8 +95,10 @@ class WebSocketService {
 
     _restoreSubscriptions() {
         this.chatSubscriptions.forEach((entry) => this._subscribeChat(entry.chatId, entry.handlers));
-        if (this.presenceSubscription?.handler) {
-            this.presenceSubscription = this.client.subscribe("/topic/presence", this.presenceSubscription.handler);
+        if (this.presenceHandler) {
+            this.presenceSubscription = this.client.subscribe("/topic/presence", (frame) => {
+                this.presenceHandler?.(this._parse(frame));
+            });
         }
     }
 
@@ -135,6 +139,7 @@ class WebSocketService {
         this.chatSubscriptions.clear();
         this.presenceSubscription?.unsubscribe();
         this.presenceSubscription = null;
+        this.presenceHandler = null;
         this.client?.deactivate();
         this.client = null;
         this.connectionPromise = null;
