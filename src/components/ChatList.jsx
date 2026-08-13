@@ -27,8 +27,8 @@ const ChatList = ({ onSelectChat, refreshTrigger, selectedChatId }) => {
         // Sort chats, pinning the AI chat to the top
         const sortedChats = response.data.sort((a, b) => {
           // Pin GeminiAI to the top
-          if (a.receiverName === "GeminiAI") return -1;
-          if (b.receiverName === "GeminiAI") return 1;
+          if (a.receiverName?.toLowerCase() === "geminiai") return -1;
+          if (b.receiverName?.toLowerCase() === "geminiai") return 1;
           // Sort other chats alphabetically by name
           return (a.chatName || "").localeCompare(b.chatName || "");
         });
@@ -81,7 +81,7 @@ const ChatList = ({ onSelectChat, refreshTrigger, selectedChatId }) => {
         <ul className="space-y-1 py-1">
           {chats.map((chat) => {
             // Step 2: Check if the current chat is with the AI
-            const isAiChat = chat.receiverName === "Gemini AI";
+            const isAiChat = chat.receiverName?.toLowerCase() === "geminiai";
             return (
               <li
                 key={chat.chatId}

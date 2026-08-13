@@ -7,8 +7,8 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await apiClient.get("/api/auth/logout");
-      if (response.status === 200) {
+      const response = await apiClient.post("/api/auth/logout");
+      if (response.status === 200 || response.status === 204) {
         console.log("Logout successful");
         navigate("/login", { replace: true });
       } else {

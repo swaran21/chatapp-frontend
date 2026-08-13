@@ -26,13 +26,7 @@ const ChatBox = ({ chat, currentUser, onChatDeleted, onGoBack }) => {
     const [isUploading, setIsUploading] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-    let currentTheme = 'light';
-    try {
-        const { theme } = useTheme();
-        currentTheme = theme || 'light';
-    } catch (e) {
-        console.warn("ThemeContext not available, defaulting EmojiPicker to light theme.");
-    }
+    const currentTheme = 'light';
 
     const messagesEndRef = useRef(null); 
     const fileInputRef = useRef(null); 

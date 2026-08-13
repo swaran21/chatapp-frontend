@@ -20,9 +20,9 @@ const CreateChat = ({ onChatCreated }) => {
 
      try {
        const response = await apiClient.post("/api/chat/create", { chatName, receiverName });
-       setMessage(response.data.message || "Chat created!");
+       setMessage("Chat created!");
        setIsError(false);
-       if (onChatCreated && response.data.chat) { onChatCreated(response.data.chat); }
+       if (onChatCreated) { onChatCreated(response.data); }
        setChatName(""); setReceiverName(""); // Clear fields on success
      } catch (error) {
        setIsError(true);
