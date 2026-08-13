@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Home from "./pages/Home.jsx";
@@ -26,43 +26,43 @@ const AnimatedRoutes = () => {
             <Routes location={location} key={location.pathname}>
                  {/* Home */}
                  <Route path="/" element={
-                    <motion.div
+                    <Motion.div
                         initial="initial" animate="in" exit="out"
                         variants={pageVariants} transition={pageTransition}
                         className="w-full h-full" // Ensure motion div fills space
-                     > <Home /> </motion.div>
+                     > <Home /> </Motion.div>
                  }/>
                  {/* Login */}
                  <Route path="/login" element={
-                     <motion.div
+                     <Motion.div
                         initial="initial" animate="in" exit="out"
                         variants={pageVariants} transition={pageTransition}
                          className="w-full h-full"
-                     > <Login /> </motion.div>
+                     > <Login /> </Motion.div>
                  }/>
                  {/* Register */}
                  <Route path="/register" element={
-                     <motion.div
+                      <Motion.div
                         initial="initial" animate="in" exit="out"
                         variants={pageVariants} transition={pageTransition}
                          className="w-full h-full"
-                     > <Register /> </motion.div>
+                     > <Register /> </Motion.div>
                  }/>
                  {/* Welcome */}
                  <Route path="/welcome" element={
-                     <motion.div
+                      <Motion.div
                         initial="initial" animate="in" exit="out"
                         variants={pageVariants} transition={pageTransition}
                          className="w-full h-full"
-                     > <Welcome /> </motion.div>
+                     > <Welcome /> </Motion.div>
                  }/>
                  {/* Chat Page - Main application area */}
                  <Route path="/chatPage" element={
-                      <motion.div
+                       <Motion.div
                         initial="initial" animate="in" exit="out"
                         variants={pageVariants} transition={pageTransition}
                          className="w-full h-screen" // Needs specific height for chat layout
-                     > <ChatPage /> </motion.div>
+                     > <ChatPage /> </Motion.div>
                  }/>
             </Routes>
         </AnimatePresence>

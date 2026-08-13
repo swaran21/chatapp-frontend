@@ -1,5 +1,5 @@
 // src/pages/ChatPage.jsx
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import apiClient from "../api/axiosConfig";
 import ChatList from "../components/ChatList";
 import ChatBox from "../components/ChatBox";

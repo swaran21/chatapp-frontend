@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 
 const Home = () => {
   return (
@@ -12,7 +12,7 @@ const Home = () => {
         <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-gradient-to-br from-indigo-200 to-transparent rounded-full opacity-30 filter blur-3xl animate-pulse"></div>
         <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-gradient-to-tl from-emerald-200 to-transparent rounded-full opacity-30 filter blur-3xl animate-pulse animation-delay-2s"></div>
 
-      <motion.div
+      <Motion.div
             initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
             className="relative z-10"
        >
@@ -24,9 +24,9 @@ const Home = () => {
          <p className="text-lg mb-10 max-w-xl mx-auto text-slate-600">
              Connect instantly, chat seamlessly. Experience the next level of communication.
          </p>
-      </motion.div>
+      </Motion.div>
 
-      <motion.div
+      <Motion.div
             initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.5, type: 'spring', stiffness: 100 }}
             className="relative z-10 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6"
       >
@@ -44,7 +44,7 @@ const Home = () => {
              Register
            </button>
         </Link>
-      </motion.div>
+      </Motion.div>
     </div>
   );
 };
