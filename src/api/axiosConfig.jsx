@@ -28,7 +28,7 @@ apiClient.interceptors.request.use(async (config) => {
     await ensureCsrfToken();
     const csrfToken = readCookie('XSRF-TOKEN');
     if (csrfToken) {
-      config.headers['X-CSRF-TOKEN'] = decodeURIComponent(csrfToken);
+      config.headers['X-XSRF-TOKEN'] = decodeURIComponent(csrfToken);
     }
   }
   return config;
@@ -43,7 +43,7 @@ apiClient.interceptors.response.use(
         await apiClient.get('/api/auth/csrf-token');
         const csrfToken = readCookie('XSRF-TOKEN');
         if (csrfToken) {
-          originalRequest.headers['X-CSRF-TOKEN'] = decodeURIComponent(csrfToken);
+          originalRequest.headers['X-XSRF-TOKEN'] = decodeURIComponent(csrfToken);
         }
         return apiClient.request(originalRequest);
       } catch (retryError) {
