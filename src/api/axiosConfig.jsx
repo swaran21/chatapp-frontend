@@ -5,31 +5,28 @@ const apiClient = axios.create({
   withCredentials: true,
 });
 
-const readCookie = (name) => document.cookie
-  .split('; ')
-  .find((row) => row.startsWith(`${name}=`))
-  ?.split('=')[1];
-
+let csrfToken;
 let csrfBootstrapRequest;
 
-const ensureCsrfToken = async () => {
-  if (readCookie('XSRF-TOKEN')) return;
-  csrfBootstrapRequest ??= apiClient.get('/api/auth/csrf-token');
+const loadCsrfToken = async () => {
+  csrfBootstrapRequest ??= apiClient.get('/api/auth/csrf-token')
+    .then(({ data }) => {
+      if (!data?.token) throw new Error('The backend did not return a CSRF token.');
+      csrfToken = data.token;
+      return csrfToken;
+    });
   try {
-    await csrfBootstrapRequest;
+    return await csrfBootstrapRequest;
   } finally {
     csrfBootstrapRequest = undefined;
   }
 };
 
+const ensureCsrfToken = () => csrfToken ? Promise.resolve(csrfToken) : loadCsrfToken();
 apiClient.interceptors.request.use(async (config) => {
   const method = config.method?.toLowerCase();
   if (!['get', 'head', 'options'].includes(method)) {
-    await ensureCsrfToken();
-    const csrfToken = readCookie('XSRF-TOKEN');
-    if (csrfToken) {
-      config.headers['X-XSRF-TOKEN'] = decodeURIComponent(csrfToken);
-    }
+    config.headers['X-XSRF-TOKEN'] = await ensureCsrfToken();
   }
   return config;
 });
@@ -40,11 +37,8 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 403 && originalRequest && !originalRequest._csrfRetried) {
       originalRequest._csrfRetried = true;
       try {
-        await apiClient.get('/api/auth/csrf-token');
-        const csrfToken = readCookie('XSRF-TOKEN');
-        if (csrfToken) {
-          originalRequest.headers['X-XSRF-TOKEN'] = decodeURIComponent(csrfToken);
-        }
+        csrfToken = undefined;
+        originalRequest.headers['X-XSRF-TOKEN'] = await loadCsrfToken();
         return apiClient.request(originalRequest);
       } catch (retryError) {
         return Promise.reject(retryError);
