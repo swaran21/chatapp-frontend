@@ -34,19 +34,31 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 apiClient.interceptors.response.use(
-  (response) => response, 
-  (error) => {
-    if (error.response) {
-        const { status } = error.response;
-        // Handle Unauthorized or Forbidden errors
-        if (status === 401 || status === 403) {
-            console.error(`API Error (${status}):`, error.response.data?.message || 'Access denied');
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 403 && originalRequest && !originalRequest._csrfRetried) {
+      originalRequest._csrfRetried = true;
+      try {
+        await apiClient.get('/api/auth/csrf-token');
+        const csrfToken = readCookie('XSRF-TOKEN');
+        if (csrfToken) {
+          originalRequest.headers['X-CSRF-TOKEN'] = decodeURIComponent(csrfToken);
         }
+        return apiClient.request(originalRequest);
+      } catch (retryError) {
+        return Promise.reject(retryError);
+      }
+    }
+    if (error.response) {
+      const { status } = error.response;
+      if (status === 401 || status === 403) {
+        console.error(`API Error (${status}):`, error.response.data?.message || 'Access denied');
+      }
     } else {
-        console.error("Network or other error:", error.message);
+      console.error("Network or other error:", error.message);
     }
     return Promise.reject(error);
   }
 );
-
 export default apiClient;
