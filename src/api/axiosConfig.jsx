@@ -26,7 +26,7 @@ const ensureCsrfToken = () => csrfToken ? Promise.resolve(csrfToken) : loadCsrfT
 apiClient.interceptors.request.use(async (config) => {
   const method = config.method?.toLowerCase();
   if (!['get', 'head', 'options'].includes(method)) {
-    config.headers['X-XSRF-TOKEN'] = await ensureCsrfToken();
+    config.headers['X-CSRF-TOKEN'] = await ensureCsrfToken();
   }
   return config;
 });
@@ -38,7 +38,7 @@ apiClient.interceptors.response.use(
       originalRequest._csrfRetried = true;
       try {
         csrfToken = undefined;
-        originalRequest.headers['X-XSRF-TOKEN'] = await loadCsrfToken();
+        originalRequest.headers['X-CSRF-TOKEN'] = await loadCsrfToken();
         return apiClient.request(originalRequest);
       } catch (retryError) {
         return Promise.reject(retryError);
