@@ -39,6 +39,7 @@ const ChatBox = ({ chat, currentUser, onChatDeleted, onGoBack }) => {
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [toast, setToast] = useState("");
     const [reactionMenuMessageId, setReactionMenuMessageId] = useState(null);
+    const [deleteChatOpen, setDeleteChatOpen] = useState(false);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const textareaRef = useRef(null);
@@ -255,9 +256,13 @@ const ChatBox = ({ chat, currentUser, onChatDeleted, onGoBack }) => {
     };
 
     const handleDeleteChat = async () => {
-        if (!window.confirm(`Delete “${chat.chatName || "this chat"}”? This cannot be undone.`)) return;
+        setDeleteChatOpen(true);
+    };
+
+    const confirmDeleteChat = async () => {
         try {
             await apiClient.delete(`/api/chat/delete?chatId=${chat.chatId}`);
+            setDeleteChatOpen(false);
             onChatDeleted?.(chat.chatId);
         } catch (deleteError) {
             if (![401, 403].includes(deleteError.response?.status)) setError(deleteError.response?.data?.message || "Failed to delete chat.");
@@ -316,13 +321,13 @@ const ChatBox = ({ chat, currentUser, onChatDeleted, onGoBack }) => {
             </footer>}
         {toast && <Motion.div initial={{ opacity: 0, y: 12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="pointer-events-none absolute bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full border border-emerald-100 bg-white px-4 py-2 text-xs font-bold text-emerald-700 shadow-xl shadow-slate-900/10">{toast}</Motion.div>}
 
-        {(editingMessage || deleteTarget) && <Motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-40 flex items-end justify-center bg-slate-950/30 p-4 backdrop-blur-sm sm:items-center">
+        {(editingMessage || deleteTarget || deleteChatOpen) && <Motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-40 flex items-end justify-center bg-slate-950/30 p-4 backdrop-blur-sm sm:items-center">
             <Motion.div initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="w-full max-w-md rounded-3xl border border-white/70 bg-white p-5 shadow-2xl shadow-slate-900/20 dark:border-slate-700 dark:bg-slate-900">
                 <div className="mb-4 flex items-center justify-between">
-                    <div><p className="text-sm font-black text-slate-900 dark:text-white">{editingMessage ? "Edit message" : "Delete message?"}</p><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{editingMessage ? "Make your changes and save when ready." : "This message will be removed for everyone."}</p></div>
-                    <button onClick={() => { setEditingMessage(null); setDeleteTarget(null); }} className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white" aria-label="Close dialog"><XMarkIcon className="h-5 w-5" /></button>
+                    <div><p className="text-sm font-black text-slate-900 dark:text-white">{editingMessage ? "Edit message" : deleteChatOpen ? "Delete chat?" : "Delete message?"}</p><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{editingMessage ? "Make your changes and save when ready." : deleteChatOpen ? "All messages in this chat will be removed." : "This message will be removed for everyone."}</p></div>
+                    <button onClick={() => { setEditingMessage(null); setDeleteTarget(null); setDeleteChatOpen(false); }} className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white" aria-label="Close dialog"><XMarkIcon className="h-5 w-5" /></button>
                 </div>
-                {editingMessage ? <><textarea autoFocus value={editDraft} onChange={(event) => setEditDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); saveEdit(); } }} maxLength={2000} rows={4} className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white" /><div className="mt-4 flex justify-end gap-2"><button onClick={() => setEditingMessage(null)} className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button><button onClick={saveEdit} disabled={!editDraft.trim() || editDraft.trim() === editingMessage.content} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-700 disabled:opacity-50"><CheckIcon className="h-4 w-4" />Save changes</button></div></> : <><div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">{deleteTarget?.content}</div><div className="mt-4 flex justify-end gap-2"><button onClick={() => setDeleteTarget(null)} className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Keep message</button><button onClick={confirmDelete} className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-rose-500/20 transition hover:bg-rose-700">Delete for everyone</button></div></>}
+                {editingMessage ? <><textarea autoFocus value={editDraft} onChange={(event) => setEditDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); saveEdit(); } }} maxLength={2000} rows={4} className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white" /><div className="mt-4 flex justify-end gap-2"><button onClick={() => setEditingMessage(null)} className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button><button onClick={saveEdit} disabled={!editDraft.trim() || editDraft.trim() === editingMessage.content} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-700 disabled:opacity-50"><CheckIcon className="h-4 w-4" />Save changes</button></div></> : deleteChatOpen ? <><div className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">This action cannot be undone.</div><div className="mt-4 flex justify-end gap-2"><button onClick={() => setDeleteChatOpen(false)} className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Keep chat</button><button onClick={confirmDeleteChat} className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-rose-500/20 transition hover:bg-rose-700">Delete chat</button></div></> : <><div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">{deleteTarget?.content}</div><div className="mt-4 flex justify-end gap-2"><button onClick={() => setDeleteTarget(null)} className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Keep message</button><button onClick={confirmDelete} className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-rose-500/20 transition hover:bg-rose-700">Delete for everyone</button></div></>}
             </Motion.div>
         </Motion.div>}
         </div>
