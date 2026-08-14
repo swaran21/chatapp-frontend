@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { DocumentIcon as FileIcon } from "@heroicons/react/24/outline";
 import EmojiPicker, { Theme as EmojiTheme, EmojiStyle } from "emoji-picker-react";
+import { motion as Motion } from "framer-motion";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const QUICK_REACTIONS = ["👍", "❤️", "😂"];
@@ -236,8 +237,8 @@ const ChatBox = ({ chat, currentUser, onChatDeleted, onGoBack }) => {
     };
 
     return (
-        <div className="flex h-full w-full flex-col bg-slate-50 dark:bg-gray-900">
-            <header className="flex flex-shrink-0 items-center gap-3 border-b border-slate-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div className="flex h-full w-full flex-col bg-white/60">
+            <header className="flex flex-shrink-0 items-center gap-3 border-b border-slate-200/80 bg-white/80 p-4 shadow-[0_8px_25px_rgba(38,48,82,0.05)] backdrop-blur-xl">
                 <button onClick={onGoBack} className="rounded-full p-1 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-gray-700 md:hidden" aria-label="Back to chat list">
                     <ArrowLeftIcon className="h-5 w-5" />
                 </button>
@@ -251,13 +252,13 @@ const ChatBox = ({ chat, currentUser, onChatDeleted, onGoBack }) => {
                 {chat?.chatId && <button onClick={handleDeleteChat} disabled={isUploading} className="rounded-md p-2 text-red-600 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-900/30" aria-label="Delete chat" title="Delete chat"><TrashIcon className="h-4 w-4" /></button>}
             </header>
 
-            <main className="relative flex-1 space-y-3 overflow-y-auto bg-slate-100/50 p-4 dark:bg-gray-900">
+            <main className="soft-scrollbar relative flex-1 space-y-4 overflow-y-auto bg-gradient-to-b from-slate-50/80 to-indigo-50/30 p-4 sm:p-6">
                 {loadingHistory && <div className="flex flex-col items-center p-8 text-sm text-slate-500"><LoadingSpinner size="h-8 w-8" /><span className="mt-2">Loading messages…</span></div>}
                 {!loadingHistory && (error || uploadError || wsError) && <div className="mx-auto flex max-w-lg items-center gap-2 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300"><ExclamationCircleIcon className="h-5 w-5 shrink-0" />{error || uploadError || wsError}</div>}
                 {!loadingHistory && messages.map((message) => {
                     const own = message.sender === currentUser;
                     return <div key={message.id} className={`group flex ${own ? "justify-end" : "justify-start"}`}>
-                        <div className={`relative max-w-[85%] rounded-xl p-2.5 text-sm shadow-sm sm:max-w-[70%] ${own ? "rounded-br-none bg-indigo-600 text-white" : "rounded-bl-none border border-slate-200 bg-white text-slate-800 dark:border-gray-600 dark:bg-gray-700 dark:text-slate-100"}`}>
+                        <div className={`relative max-w-[85%] rounded-2xl p-3 text-sm shadow-[0_8px_20px_rgba(38,48,82,0.08)] sm:max-w-[70%] ${own ? "rounded-br-md bg-gradient-to-br from-indigo-600 to-violet-600 text-white" : "rounded-bl-md border border-slate-200/80 bg-white/90 text-slate-800"}`}>
                             {!own && <strong className="mb-1 block text-xs text-indigo-700 dark:text-indigo-300">{message.sender}</strong>}
                             {message.deleted ? <p className="italic opacity-70">Message deleted</p> : message.type === "TEXT" ? <p className="whitespace-pre-wrap">{message.content}</p> : message.type === "FILE_URL" && message.content ? <a href={message.content} target="_blank" rel="noopener noreferrer" download={message.fileName || "file"} className="flex items-center gap-2 rounded-md bg-black/10 p-1.5 font-medium"><FileIcon className="h-5 w-5 shrink-0" /><span className="truncate">{message.fileName || "Attached file"}</span></a> : <p className="italic opacity-70">Attachment unavailable</p>}
                             {!message.deleted && own && message.type === "TEXT" && <div className="mt-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"><button onClick={() => editMessage(message)} className="rounded p-1 hover:bg-white/20" title="Edit message"><PencilSquareIcon className="h-3.5 w-3.5" /></button><button onClick={() => deleteMessage(message)} className="rounded p-1 hover:bg-white/20" title="Delete message"><TrashIcon className="h-3.5 w-3.5" /></button></div>}
@@ -269,13 +270,13 @@ const ChatBox = ({ chat, currentUser, onChatDeleted, onGoBack }) => {
                 <div ref={messagesEndRef} />
             </main>
 
-            {chat?.chatId && currentUser && <footer className="relative flex-shrink-0 border-t border-slate-200 bg-slate-100 p-3 dark:border-gray-700 dark:bg-gray-800">
+            {chat?.chatId && currentUser && <footer className="relative flex-shrink-0 border-t border-slate-200/80 bg-white/80 p-3 backdrop-blur-xl sm:p-4">
                 <div className="flex items-end gap-1 sm:gap-2">
                     <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-indigo-600 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700" aria-label="Attach file">{isUploading ? <LoadingSpinner /> : <AttachIcon className="h-5 w-5" />}</button>
                     <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" disabled={isUploading} />
                     <button id="emoji-toggle-button" onClick={() => setShowEmojiPicker((visible) => !visible)} disabled={isUploading} className="rounded-full p-2 text-slate-500 hover:bg-slate-200 hover:text-indigo-600 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700" aria-label="Choose emoji"><FaceSmileIcon className="h-5 w-5" /></button>
-                    <textarea ref={textareaRef} value={inputMsg} onChange={(event) => { setInputMsg(event.target.value); sendTyping(event.target.value); }} onKeyDown={handleKeyDown} rows={1} maxLength={2000} placeholder="Write a message…" disabled={isUploading} className="max-h-28 flex-1 resize-none rounded-lg border border-slate-300 bg-white p-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-slate-100" />
-                    <button onClick={sendTextMessage} disabled={!inputMsg.trim() || isUploading || !WebSocketService.isConnected()} className="rounded-lg bg-indigo-600 p-2 text-white shadow transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50" aria-label="Send message"><SendArrowIcon className="h-5 w-5" /></button>
+                    <textarea ref={textareaRef} value={inputMsg} onChange={(event) => { setInputMsg(event.target.value); sendTyping(event.target.value); }} onKeyDown={handleKeyDown} rows={1} maxLength={2000} placeholder="Write a message…" disabled={isUploading} className="max-h-28 flex-1 resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" />
+                    <button onClick={sendTextMessage} disabled={!inputMsg.trim() || isUploading || !WebSocketService.isConnected()} className="rounded-2xl bg-indigo-600 p-3 text-white shadow-lg shadow-indigo-300/30 transition hover:-translate-y-0.5 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50" aria-label="Send message"><SendArrowIcon className="h-5 w-5" /></button>
                 </div>
                 {showEmojiPicker && <div ref={emojiPickerRef} className="absolute bottom-full right-2 z-30 mb-2"><EmojiPicker onEmojiClick={(emoji) => { setInputMsg((value) => value + emoji.emoji); textareaRef.current?.focus(); }} theme={EmojiTheme.LIGHT} emojiStyle={EmojiStyle.NATIVE} lazyLoadEmojis height={350} previewConfig={{ showPreview: false }} /></div>}
             </footer>}
