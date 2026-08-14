@@ -265,7 +265,7 @@ const ChatBox = ({ chat, currentUser, onChatDeleted, onGoBack }) => {
                             {!message.deleted && <div className="mt-1 flex flex-wrap gap-1">{QUICK_REACTIONS.map((emoji) => <button key={emoji} onClick={() => toggleReaction(message.id, emoji)} className="rounded-full bg-black/10 px-1.5 text-xs hover:bg-black/20" title={`React ${emoji}`}>{emoji}</button>)}{message.reactions?.map((reaction) => <span key={`${reaction.username}-${reaction.emoji}`} className="rounded-full bg-black/10 px-1.5 text-xs">{reaction.emoji}</span>)}</div>}
                             <span className="mt-1 block text-right text-[10px] opacity-60">{message.timestamp?.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}{message.edited && " · edited"}{own && lastReceipt?.reader === currentUser && " · read"}</span>
                         </div>
-                    </div>;
+                    </Motion.div>;
                 })}
                 <div ref={messagesEndRef} />
             </main>
