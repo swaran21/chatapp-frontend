@@ -21,12 +21,12 @@ const Login = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8
-        bg-slate-100 transition-colors duration-300">
+        app-shell">
 
       <div className="w-full max-w-sm p-8 rounded-xl border shadow-lg
           bg-white border-slate-200">
 
-        <h2 className="text-3xl font-bold text-center mb-6 text-slate-800">Login</h2>
+        <p className="mb-2 text-center text-xs font-bold uppercase tracking-[0.18em] text-indigo-500">Welcome back</p><h2 className="text-3xl font-black tracking-tight text-center mb-2 text-slate-900">Login</h2>
 
         {error && (
           <p className="text-center mb-4 text-sm p-2.5 rounded-md border font-medium
