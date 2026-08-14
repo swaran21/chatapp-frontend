@@ -90,7 +90,7 @@ const ChatPage = () => {
     if (loading) {
        return ( <>
          <Navbar />
-         <div className="flex items-center justify-center h-[calc(100vh-4rem)] bg-slate-100 dark:bg-gray-900 text-slate-500 dark:text-slate-400">
+         <div className="app-shell flex h-[calc(100vh-4.5rem)] items-center justify-center text-slate-500">
               <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500 dark:border-indigo-400"></div>
               <span className="ml-3 text-lg">Loading Chat...</span>
          </div>
@@ -105,18 +105,18 @@ const ChatPage = () => {
     // Main Chat Layout
     return (
         // Full height container, flex column
-        <div className="flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-gray-900">
+        <div className="app-shell flex h-screen flex-col overflow-hidden">
             <Navbar />
             {/* Main content area, flex row, takes remaining height */}
              {/* Use relative positioning for potential absolute positioned sidebar on mobile */}
-            <div className="flex flex-1 overflow-hidden relative">
+            <div className="relative flex flex-1 overflow-hidden p-0 sm:p-3 lg:p-5">
 
                  {/* Left Sidebar Wrapper */}
                  {/* On mobile: Full width initially, hidden when chat is selected */}
                  {/* On desktop: Fixed width, always visible */}
                  <div className={`
-                    ${sidebarVisibleClass} flex-col flex-shrink-0 border-r bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700
-                    w-full md:w-[320px] lg:w-[360px]
+                    ${sidebarVisibleClass} glass-panel flex-col flex-shrink-0 overflow-hidden rounded-none border-0 bg-white/90 sm:rounded-3xl sm:border
+                    w-full md:w-[320px] lg:w-[370px]
                     transition-transform duration-300 ease-in-out md:translate-x-0
                     ${isMobileView && isMobileChatSelected ? '-translate-x-full' : 'translate-x-0'}
                     absolute md:static inset-y-0 left-0 z-20 md:z-0  {/* Absolute position on mobile */}
@@ -135,10 +135,10 @@ const ChatPage = () => {
                  {/* On mobile: Takes full width when selected, hidden otherwise */}
                  {/* On desktop: Takes remaining width */}
                  <div className={`
-                     ${chatboxVisibleClass} flex-1 items-center justify-center bg-slate-50 dark:bg-gray-900/80 backdrop-blur-sm md:bg-slate-100 md:dark:bg-gray-900 md:backdrop-blur-none
+                     ${chatboxVisibleClass} flex-1 items-center justify-center glass-panel bg-white/70 backdrop-blur-xl md:bg-white/70
                      w-full md:w-auto
                      transition-transform duration-300 ease-in-out md:translate-x-0
-                     absolute md:static inset-0 z-10 md:z-0 {/* Lower z-index than sidebar when active */}
+                     absolute md:static inset-0 z-10 overflow-hidden md:z-0 {/* Lower z-index than sidebar when active */}
                      ${isMobileView && isMobileChatSelected ? 'translate-x-0' : 'translate-x-full'}
                      ${!isMobileChatSelected && !isMobileView && !selectedChat ? 'items-center justify-center': ''} {/* Center placeholder on desktop only */}
                  `}>
