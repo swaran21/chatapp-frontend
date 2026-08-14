@@ -38,6 +38,7 @@ const ChatBox = ({ chat, currentUser, onChatDeleted, onGoBack }) => {
     const [editDraft, setEditDraft] = useState("");
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [toast, setToast] = useState("");
+    const [reactionMenuMessageId, setReactionMenuMessageId] = useState(null);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const textareaRef = useRef(null);
@@ -219,7 +220,10 @@ const ChatBox = ({ chat, currentUser, onChatDeleted, onGoBack }) => {
         showToast("Message deleted");
     };
 
-    const toggleReaction = (messageId, emoji) => WebSocketService.toggleReaction(chat.chatId, messageId, emoji);
+    const toggleReaction = (messageId, emoji) => {
+        WebSocketService.toggleReaction(chat.chatId, messageId, emoji);
+        setReactionMenuMessageId(null);
+    };
 
     const uploadFile = async (file) => {
         setIsUploading(true);
@@ -286,7 +290,13 @@ const ChatBox = ({ chat, currentUser, onChatDeleted, onGoBack }) => {
                             {!own && <strong className="mb-1 block text-xs text-indigo-700 dark:text-indigo-300">{message.sender}</strong>}
                             {message.deleted ? <p className="italic opacity-70">Message deleted</p> : message.type === "TEXT" ? <p className="whitespace-pre-wrap">{message.content}</p> : message.type === "FILE_URL" && message.content ? <a href={message.content} target="_blank" rel="noopener noreferrer" download={message.fileName || "file"} className="flex items-center gap-2 rounded-md bg-black/10 p-1.5 font-medium"><FileIcon className="h-5 w-5 shrink-0" /><span className="truncate">{message.fileName || "Attached file"}</span></a> : <p className="italic opacity-70">Attachment unavailable</p>}
                             {!message.deleted && own && message.type === "TEXT" && <div className="mt-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"><button onClick={() => editMessage(message)} className="rounded p-1 hover:bg-white/20" title="Edit message"><PencilSquareIcon className="h-3.5 w-3.5" /></button><button onClick={() => deleteMessage(message)} className="rounded p-1 hover:bg-white/20" title="Delete message"><TrashIcon className="h-3.5 w-3.5" /></button></div>}
-                            {!message.deleted && <div className="mt-1 flex flex-wrap gap-1">{QUICK_REACTIONS.map((emoji) => <button key={emoji} onClick={() => toggleReaction(message.id, emoji)} className="rounded-full bg-black/10 px-1.5 text-xs hover:bg-black/20" title={`React ${emoji}`}>{emoji}</button>)}{message.reactions?.map((reaction) => <span key={`${reaction.username}-${reaction.emoji}`} className="rounded-full bg-black/10 px-1.5 text-xs">{reaction.emoji}</span>)}</div>}
+                            {!message.deleted && <div className="relative mt-2 flex flex-wrap items-center gap-1">
+                                <button onClick={() => setReactionMenuMessageId((current) => current === message.id ? null : message.id)} className="rounded-full bg-black/10 px-2 py-0.5 text-xs font-bold opacity-70 transition hover:bg-black/20 hover:opacity-100" aria-label="Add reaction" aria-expanded={reactionMenuMessageId === message.id}>+</button>
+                                {message.reactions?.map((reaction) => <button key={`${reaction.username}-${reaction.emoji}`} onClick={() => toggleReaction(message.id, reaction.emoji)} className="rounded-full bg-black/10 px-1.5 text-xs transition hover:bg-black/20" title={`React ${reaction.emoji}`}>{reaction.emoji}</button>)}
+                                {reactionMenuMessageId === message.id && <Motion.div initial={{ opacity: 0, y: 5, scale: 0.94 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`absolute bottom-full z-20 mb-2 flex gap-1 rounded-2xl border border-white/70 bg-white/95 p-2 shadow-xl shadow-slate-900/10 backdrop-blur-xl ${own ? "right-0" : "left-0"}`}>
+                                    {QUICK_REACTIONS.map((emoji) => <button key={emoji} onClick={() => toggleReaction(message.id, emoji)} className="rounded-xl px-1.5 py-1 text-lg transition hover:-translate-y-0.5 hover:bg-indigo-50" title={`React ${emoji}`}>{emoji}</button>)}
+                                </Motion.div>}
+                            </div>}
                             <span className="mt-1 block text-right text-[10px] opacity-60">{message.timestamp?.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}{message.edited && " · edited"}{own && lastReceipt?.reader === currentUser && " · read"}</span>
                         </div>
                     </Motion.div>;
