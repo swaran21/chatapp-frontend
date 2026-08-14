@@ -10,14 +10,29 @@ const readCookie = (name) => document.cookie
   .find((row) => row.startsWith(`${name}=`))
   ?.split('=')[1];
 
-apiClient.interceptors.request.use((config) => {
-  const csrfToken = readCookie('XSRF-TOKEN');
-  if (csrfToken && !['get', 'head', 'options'].includes(config.method?.toLowerCase())) {
-    config.headers['X-CSRF-TOKEN'] = decodeURIComponent(csrfToken);
+let csrfBootstrapRequest;
+
+const ensureCsrfToken = async () => {
+  if (readCookie('XSRF-TOKEN')) return;
+  csrfBootstrapRequest ??= apiClient.get('/api/auth/csrf-token');
+  try {
+    await csrfBootstrapRequest;
+  } finally {
+    csrfBootstrapRequest = undefined;
+  }
+};
+
+apiClient.interceptors.request.use(async (config) => {
+  const method = config.method?.toLowerCase();
+  if (!['get', 'head', 'options'].includes(method)) {
+    await ensureCsrfToken();
+    const csrfToken = readCookie('XSRF-TOKEN');
+    if (csrfToken) {
+      config.headers['X-CSRF-TOKEN'] = decodeURIComponent(csrfToken);
+    }
   }
   return config;
 });
-
 apiClient.interceptors.response.use(
   (response) => response, 
   (error) => {
