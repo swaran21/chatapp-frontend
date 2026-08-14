@@ -6,6 +6,7 @@ import Register from "./pages/Register.jsx";
 import Home from "./pages/Home.jsx";
 import Welcome from "./pages/Welcome.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
+import { ThemeProvider } from "./theme/ThemeProvider.jsx";
 
 const pageVariants = {
   initial: { opacity: 0, scale: 0.98 },
@@ -72,9 +73,11 @@ const AnimatedRoutes = () => {
 
 const App = () => {
   return (
-    <Router>
-      <AnimatedRoutes />
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <AnimatedRoutes />
+      </Router>
+    </ThemeProvider>
   );
 };
 
